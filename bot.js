@@ -69,6 +69,7 @@ var os = require('os');
 
 var controller = Botkit.slackbot({
   debug: false,
+  json_file_store: 'storage'
 });
 
 var bot = controller.spawn(
@@ -77,6 +78,28 @@ var bot = controller.spawn(
   }
 ).startRTM();
 
+// create a db of users
+
+bot.api.users.list({}, function(err,response) {
+  for (i in response.members) {
+    name = response.members[i].name;
+    console.log("members: " + response.members[i].name);
+    
+    function getName(pname) { // need to make this a function for closure
+      controller.storage.users.get(pname, function(err,user) {
+        if (!user) {
+          user = {
+            id: pname,
+          } 
+          controller.storage.users.save(user, function(err,id) {
+            console.log("saved file for " + user.id);
+          })
+        }
+      })
+    }
+    getName(name);
+  }
+})
 
 controller.hears(['hello','hi'],'direct_message,direct_mention,mention',function(bot,message) {
 
@@ -116,11 +139,126 @@ controller.hears(['call me (.*)'],'direct_message,direct_mention,mention',functi
   })
 });
 
+// [\w]+ doesn't work for some reason... 
+controller.hears(['(.+\.regint) (.*)'],'direct_message,direct_mention,mention',function(bot,message) {
+  console.log("heard regint")
+  var matches = message.text.match(/(.+\.regint) (.*)/i);
+  if (matches == null) {
+    return;
+  }
+  var name = matches[1].substring(0, matches[1].length - ".regint".length);
+  var text = matches[2];
+  console.log("registering for " + name + " " + text);
+  controller.storage.users.get(name,function(err,user) {
+    if (!user) {
+      bot.reply(message,"User '" + name + "' does not exist!");
+      return;
+    } else if (user.regs) {
+      //var regs = user.regs.split(",")
+      user.regs = user.regs + "," + text;
+    } else {
+      user.regs = text;
+    }
+    controller.storage.users.save(user,function(err,id) {
+      bot.reply(message,"Registering interrupt '" + text + "'" + " for " + name);
+    })
+  })
+});
+
+controller.hears(['.+\.showint'],'direct_message,direct_mention,mention',function(bot,message) {
+  console.log("heard showint")
+  var matches = message.text.match(/.+\.showint/i);
+  if (matches == null) {
+    return;
+  }
+  var name = matches[0].substring(0, matches[0].length - ".showint".length);
+  console.log("showing ints for " + name);
+  controller.storage.users.get(name,function(err,user) {
+    if (!user) {
+      bot.reply(message,"User '" + name + "' does not exist!");
+      return;
+    } else if (user.regs) {
+      bot.reply(message, "registered interrupts: " + user.regs);
+    } else {
+      bot.reply(message, "no registered interrupts");
+    }
+    })
+});
+
+controller.hears(['.+\.clearall'],'direct_message,direct_mention,mention',function(bot,message) {
+  console.log("heard clearall")
+  var matches = message.text.match(/.+\.clearall/i);
+  if (matches == null) {
+    return;
+  }
+  console.log(matches)
+  var name = matches[0].substring(0, matches[0].length - ".clearall".length);
+  console.log("clearing all int for " + name);
+  controller.storage.users.get(name,function(err,user) {
+    if (!user) {
+      bot.reply(message,"User '" + name + "' does not exist!");
+      return;
+    } else if (user.regs) {
+      //var regs = user.regs.split(",")
+      savedRegs = user.regs;
+      user.regs = "";
+    }
+    controller.storage.users.save(user,function(err,id) {
+      bot.reply(message,"Clearing all interrupts for " + name);
+      bot.reply(message," - " + savedRegs); // possible closure bug
+    })
+  })
+});
+
+controller.hears(['(.+\.clearint) (.*)'],'direct_message,direct_mention,mention',function(bot,message) {
+  console.log("heard clearint")
+  var matches = message.text.match(/(.+\.clearint) *(.*)/i);
+  if (matches == null) {
+    return;
+  }
+  console.log(matches)
+  var name = matches[1].substring(0, matches[1].length - ".clearint".length);
+  var text = matches[2];
+  console.log("clearing int for " + name + ", " + text);
+  controller.storage.users.get(name,function(err,user) {
+    if (!user) {
+      bot.reply(message,"User '" + name + "' does not exist!");
+      return;
+    } else if (user.regs) {
+      var regs = user.regs.split(",");
+      console.log(regs);
+      for (i in regs)
+      {
+        if (regs[i] === text) {
+          regs.splice(i, 1);
+          user.regs = regs.join();
+          console.log("i: " + i)
+          console.log("user.regs: " + user.regs)
+          controller.storage.users.save(user,function(err,id) {
+            bot.reply(message,"Clearing interrupt '" + text + "' for " + name);
+          })
+          return;
+        }
+      }
+    } else {
+      bot.reply(message,"interrupt '" + text + "' not found.");
+    }
+  })
+});
+
+controller.hears(['help'],'direct_message,direct_mention,mention',function(bot,message) {
+  console.log("help");
+  bot.reply(message,"`<username>.showint` show all interrupts");
+  bot.reply(message,"`<username>.regint <interrupt description>` register an interrupt");
+  bot.reply(message,"`<username>.clearint <interrupt description>` clear one interrupt");
+  bot.reply(message,"`<username>.clearall` clear all interrupts");
+});
+
 controller.hears(['what is my name','who am i'],'direct_message,direct_mention,mention',function(bot,message) {
 
   controller.storage.users.get(message.user,function(err,user) {
     if (user && user.name) {
-      bot.reply(message,"Your name is " + user.name);
+      bot.reply(message,"Your name is: " + user.name);
     } else {
       bot.reply(message,"I don't know yet!");
     }
@@ -178,6 +316,6 @@ function formatUptime(uptime) {
     unit = unit +'s';
   }
 
-  uptime = uptime + ' ' + unit;
+  uptime = uptime.toFixed(2) + ' ' + unit;
   return uptime;
 }
