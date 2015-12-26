@@ -231,7 +231,7 @@ controller.hears(['(.+\.clearint) (.*)'],'direct_message,direct_mention,mention'
       console.log(regs);
       for (i in regs)
       {
-        if (regs[i] === text) {
+        if (regs[i].description === text) {
           regs.splice(i, 1);
           // user.regs = regs.join();
           console.log("i: " + i)
