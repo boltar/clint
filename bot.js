@@ -66,6 +66,7 @@ This bot demonstrates many of the core features of Botkit:
 
 var Botkit = require('./lib/Botkit.js')
 var os = require('os');
+var moment = require('moment-timezone')
 
 var controller = Botkit.slackbot({
   debug: false,
@@ -90,6 +91,7 @@ bot.api.users.list({}, function(err,response) {
         if (!user) {
           user = {
             id: pname,
+            regs: [ ]
           } 
           controller.storage.users.save(user, function(err,id) {
             console.log("saved file for " + user.id);
@@ -154,10 +156,7 @@ controller.hears(['(.+\.regint) (.*)'],'direct_message,direct_mention,mention',f
       bot.reply(message,"User '" + name + "' does not exist!");
       return;
     } else if (user.regs) {
-      //var regs = user.regs.split(",")
-      user.regs = user.regs + "," + text;
-    } else {
-      user.regs = text;
+      user.regs.push({description: text, timestamp: JSON.stringify(moment())});
     }
     controller.storage.users.save(user,function(err,id) {
       bot.reply(message,"Registering interrupt '" + text + "'" + " for " + name);
@@ -177,8 +176,14 @@ controller.hears(['.+\.showint'],'direct_message,direct_mention,mention',functio
     if (!user) {
       bot.reply(message,"User '" + name + "' does not exist!");
       return;
-    } else if (user.regs) {
-      bot.reply(message, "registered interrupts: " + user.regs);
+    } else if (user.regs && user.regs.length > 0) {
+      var regList = "registered interrupts: \n";
+      for (i in user.regs) {
+        m = moment(JSON.parse(user.regs[i].timestamp)).tz('America/New_York')
+        regList += m.format("YYYY-MM-DD h:mm A") + " - " + user.regs[i].description + "\n";
+        //regList += m + " - " + user.regs[i].description + "\n";
+      }
+      bot.reply(message, regList);
     } else {
       bot.reply(message, "no registered interrupts");
     }
@@ -198,14 +203,11 @@ controller.hears(['.+\.clearall'],'direct_message,direct_mention,mention',functi
     if (!user) {
       bot.reply(message,"User '" + name + "' does not exist!");
       return;
-    } else if (user.regs) {
-      //var regs = user.regs.split(",")
-      savedRegs = user.regs;
-      user.regs = "";
+    } else {
+      user.regs = [ ];
     }
     controller.storage.users.save(user,function(err,id) {
       bot.reply(message,"Clearing all interrupts for " + name);
-      bot.reply(message," - " + savedRegs); // possible closure bug
     })
   })
 });
@@ -225,13 +227,13 @@ controller.hears(['(.+\.clearint) (.*)'],'direct_message,direct_mention,mention'
       bot.reply(message,"User '" + name + "' does not exist!");
       return;
     } else if (user.regs) {
-      var regs = user.regs.split(",");
+      var regs = user.regs;
       console.log(regs);
       for (i in regs)
       {
         if (regs[i] === text) {
           regs.splice(i, 1);
-          user.regs = regs.join();
+          // user.regs = regs.join();
           console.log("i: " + i)
           console.log("user.regs: " + user.regs)
           controller.storage.users.save(user,function(err,id) {
