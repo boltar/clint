@@ -170,24 +170,29 @@ controller.hears(['.+\.showint'],'direct_message,direct_mention,mention',functio
   if (matches == null) {
     return;
   }
-  var name = matches[0].substring(0, matches[0].length - ".showint".length);
-  console.log("showing ints for " + name);
-  controller.storage.users.get(name,function(err,user) {
-    if (!user) {
-      bot.reply(message,"User '" + name + "' does not exist!");
-      return;
-    } else if (user.regs && user.regs.length > 0) {
-      var regList = "registered interrupts: \n";
-      for (i in user.regs) {
-        m = moment(JSON.parse(user.regs[i].timestamp)).tz('America/New_York')
-        regList += m.format("YYYY-MM-DD h:mm A") + " - " + user.regs[i].description + "\n";
-        //regList += m + " - " + user.regs[i].description + "\n";
+  
+  // get the invoker's time zone
+  bot.api.users.info({user: message.user}, function(err,response) {
+    var timezone = response.user.tz;
+    var name = matches[0].substring(0, matches[0].length - ".showint".length);
+    console.log("showing ints for " + name);
+    controller.storage.users.get(name,function(err,user) {
+      if (!user) {
+        bot.reply(message,"User '" + name + "' does not exist!");
+        return;
+      } else if (user.regs && user.regs.length > 0) {
+        var regList = "registered interrupts: \n";
+        for (i in user.regs) {
+          m = moment(JSON.parse(user.regs[i].timestamp)).tz(timezone)
+          regList += "`" + m.format("MM/DD/YYYY h:mm A") + " " + m.zoneName() + "`" + " - " + user.regs[i].description + "\n";
+          //regList += m + " - " + user.regs[i].description + "\n";
+        }
+        bot.reply(message, regList);
+      } else {
+        bot.reply(message, "no registered interrupts");
       }
-      bot.reply(message, regList);
-    } else {
-      bot.reply(message, "no registered interrupts");
-    }
-    })
+    }); // users.get
+  }); // users.info
 });
 
 controller.hears(['.+\.clearall'],'direct_message,direct_mention,mention',function(bot,message) {
