@@ -409,7 +409,6 @@ controller.hears(['(.+)\.add "(.+)" (.+)'], 'direct_message,direct_mention,menti
             item: list_item,
             timestamp: JSON.stringify(moment())
           })
-          bot.reply(message, "`" + list_item + "` added for " + list_name)
           list_found = true;
         }
       } else {
