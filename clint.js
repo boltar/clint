@@ -349,9 +349,9 @@ function formatUptime(uptime) {
 //------------------------
 //generic list management
 //------------------------
-controller.hears(['(\\w+)\.create (\\w+)'], 'direct_message,direct_mention,mention,ambient', function(bot, message) {
+controller.hears(['(\\w+)\.create ([\\w:]+)'], 'direct_message,direct_mention,mention,ambient', function(bot, message) {
   console.log("heard create")
-  var matches = message.text.match(/(.+)\.create (\w+)/i);
+  var matches = message.text.match(/(.+)\.create ([\w:]+)/i);
   if (matches == null) {
     return;
   }
@@ -384,9 +384,9 @@ controller.hears(['(\\w+)\.create (\\w+)'], 'direct_message,direct_mention,menti
   })
 });
 
-controller.hears(['(\\w+)\.add (\\w+) (.+)'], 'direct_message,direct_mention,mention,ambient', function(bot, message) {
+controller.hears(['(\\w+)\.add ([\\w:]+) (.+)'], 'direct_message,direct_mention,mention,ambient', function(bot, message) {
   console.log("heard add")
-  var matches = message.text.match(/(.+)\.add (\w+) (.+)/i);
+  var matches = message.text.match(/(.+)\.add ([\w:]+) (.+)/i);
   if (matches == null) {
     return;
   }
@@ -431,9 +431,9 @@ controller.hears(['(\\w+)\.add (\\w+) (.+)'], 'direct_message,direct_mention,men
   })
 })
 
-controller.hears(['(\\w+)\.del_item (\\w+) (.+)'], 'direct_message,direct_mention,mention,ambient', function(bot, message) {
+controller.hears(['(\\w+)\.del_item ([\\w:]+) (.+)'], 'direct_message,direct_mention,mention,ambient', function(bot, message) {
   console.log("heard add")
-  var matches = message.text.match(/(.+)\.del_item (\w+) (.+)/i);
+  var matches = message.text.match(/(.+)\.del_item ([\w:]+) (.+)/i);
   if (matches == null) {
     return;
   }
@@ -529,9 +529,9 @@ controller.hears(['(\\w+)\.show_lists$'], 'direct_message,direct_mention,mention
   }); // users.info
 });
 
-controller.hears(['(\\w+)\.show (\\w+)'], 'direct_message,direct_mention,mention,ambient', function(bot, message) {
+controller.hears(['(\\w+)\.show ([\\w:]+)'], 'direct_message,direct_mention,mention,ambient', function(bot, message) {
   console.log("heard show list")
-  var matches = message.text.match(/(.+)\.show (\w+)/i);
+  var matches = message.text.match(/(.+)\.show ([\w:]+)/i);
   if (matches == null) {
     return;
   }
@@ -569,9 +569,9 @@ controller.hears(['(\\w+)\.show (\\w+)'], 'direct_message,direct_mention,mention
   }); // users.info
 });
 
-controller.hears(['(\\w+)\.del_list (\\w+)'], 'direct_message,direct_mention,mention,ambient', function(bot, message) {
+controller.hears(['(\\w+)\.del_list ([\\w:]+)'], 'direct_message,direct_mention,mention,ambient', function(bot, message) {
   console.log("heard del_list")
-  var matches = message.text.match(/(.+)\.del_list (\w+)/i);
+  var matches = message.text.match(/(.+)\.del_list ([\w:]+)/i);
   if (matches == null) {
     return;
   }
