@@ -73,27 +73,25 @@ var controller = Botkit.slackbot({
   json_file_store: 'storage'
 });
 
-var bot = controller.spawn(
-  {
-    token:process.env.token
-  }
-).startRTM();
+var bot = controller.spawn({
+  token: process.env.token
+}).startRTM();
 
 // create a db of users
 
-bot.api.users.list({}, function(err,response) {
+bot.api.users.list({}, function(err, response) {
   for (i in response.members) {
     name = response.members[i].name;
     console.log("members: " + response.members[i].name);
-    
+
     function getName(pname) { // need to make this a function for closure
-      controller.storage.users.get(pname, function(err,user) {
+      controller.storage.users.get(pname, function(err, user) {
         if (!user) {
           user = {
             id: pname,
-            regs: [ ]
-          } 
-          controller.storage.users.save(user, function(err,id) {
+            regs: []
+          }
+          controller.storage.users.save(user, function(err, id) {
             console.log("saved file for " + user.id);
           })
         }
@@ -103,46 +101,47 @@ bot.api.users.list({}, function(err,response) {
   }
 })
 
-controller.hears(['hello','hi'],'direct_message,direct_mention,mention',function(bot,message) {
+controller.hears(['hello', 'hi'], 'direct_message,direct_mention,mention', function(bot, message) {
 
   bot.api.reactions.add({
     timestamp: message.ts,
     channel: message.channel,
     name: 'robot_face',
-  },function(err,res) {
+  }, function(err, res) {
     if (err) {
-      bot.botkit.log("Failed to add emoji reaction :(",err);
+      bot.botkit.log("Failed to add emoji reaction :(", err);
     }
   });
 
 
-  controller.storage.users.get(message.user,function(err,user) {
+  controller.storage.users.get(message.user, function(err, user) {
     if (user && user.name) {
-      bot.reply(message,"Hello " + user.name+"!!");
-    } else {
-      bot.reply(message,"Hello.");
+      bot.reply(message, "Hello " + user.name + "!!");
+    }
+    else {
+      bot.reply(message, "Hello.");
     }
   });
 })
 
-controller.hears(['call me (.*)'],'direct_message,direct_mention,mention',function(bot,message) {
+controller.hears(['call me (.*)'], 'direct_message,direct_mention,mention', function(bot, message) {
   var matches = message.text.match(/call me (.*)/i);
   var name = matches[1];
-  controller.storage.users.get(message.user,function(err,user) {
+  controller.storage.users.get(message.user, function(err, user) {
     if (!user) {
       user = {
         id: message.user,
       }
     }
     user.name = name;
-    controller.storage.users.save(user,function(err,id) {
-      bot.reply(message,"Got it. I will call you " + user.name + " from now on.");
+    controller.storage.users.save(user, function(err, id) {
+      bot.reply(message, "Got it. I will call you " + user.name + " from now on.");
     })
   })
 });
 
 // [\w]+ doesn't work for some reason... 
-controller.hears(['(.+\.regint) (.*)'],'direct_message,direct_mention,mention',function(bot,message) {
+controller.hears(['(.+\.regint) (.*)'], 'direct_message,direct_mention,mention,ambient', function(bot, message) {
   console.log("heard regint")
   var matches = message.text.match(/(.+\.regint) (.*)/i);
   if (matches == null) {
@@ -151,36 +150,43 @@ controller.hears(['(.+\.regint) (.*)'],'direct_message,direct_mention,mention',f
   var name = matches[1].substring(0, matches[1].length - ".regint".length);
   var text = matches[2];
   console.log("registering for " + name + " " + text);
-  controller.storage.users.get(name,function(err,user) {
+  controller.storage.users.get(name, function(err, user) {
     if (!user) {
-      bot.reply(message,"User '" + name + "' does not exist!");
+      bot.reply(message, "User '" + name + "' does not exist!");
       return;
-    } else if (user.regs) {
-      user.regs.push({description: text, timestamp: JSON.stringify(moment())});
     }
-    controller.storage.users.save(user,function(err,id) {
-      bot.reply(message,"Registering interrupt '" + text + "'" + " for " + name);
+    else if (user.regs) {
+      user.regs.push({
+        description: text,
+        timestamp: JSON.stringify(moment())
+      });
+    }
+    controller.storage.users.save(user, function(err, id) {
+      bot.reply(message, "Registering interrupt '" + text + "'" + " for " + name);
     })
   })
 });
 
-controller.hears(['.+\.showint'],'direct_message,direct_mention,mention',function(bot,message) {
+controller.hears(['.+\.showint'], 'direct_message,direct_mention,mention,ambient', function(bot, message) {
   console.log("heard showint")
   var matches = message.text.match(/.+\.showint/i);
   if (matches == null) {
     return;
   }
-  
+
   // get the invoker's time zone
-  bot.api.users.info({user: message.user}, function(err,response) {
+  bot.api.users.info({
+    user: message.user
+  }, function(err, response) {
     var timezone = response.user.tz;
     var name = matches[0].substring(0, matches[0].length - ".showint".length);
     console.log("showing ints for " + name);
-    controller.storage.users.get(name,function(err,user) {
+    controller.storage.users.get(name, function(err, user) {
       if (!user) {
-        bot.reply(message,"User '" + name + "' does not exist!");
+        bot.reply(message, "User '" + name + "' does not exist!");
         return;
-      } else if (user.regs && user.regs.length > 0) {
+      }
+      else if (user.regs && user.regs.length > 0) {
         var regList = "registered interrupts: \n";
         for (i in user.regs) {
           m = moment(JSON.parse(user.regs[i].timestamp)).tz(timezone)
@@ -188,14 +194,15 @@ controller.hears(['.+\.showint'],'direct_message,direct_mention,mention',functio
           //regList += m + " - " + user.regs[i].description + "\n";
         }
         bot.reply(message, regList);
-      } else {
+      }
+      else {
         bot.reply(message, "no registered interrupts");
       }
     }); // users.get
   }); // users.info
 });
 
-controller.hears(['.+\.clearall'],'direct_message,direct_mention,mention',function(bot,message) {
+controller.hears(['.+\.clearall'], 'direct_message,direct_mention,mention,ambient', function(bot, message) {
   console.log("heard clearall")
   var matches = message.text.match(/.+\.clearall/i);
   if (matches == null) {
@@ -204,20 +211,21 @@ controller.hears(['.+\.clearall'],'direct_message,direct_mention,mention',functi
   console.log(matches)
   var name = matches[0].substring(0, matches[0].length - ".clearall".length);
   console.log("clearing all int for " + name);
-  controller.storage.users.get(name,function(err,user) {
+  controller.storage.users.get(name, function(err, user) {
     if (!user) {
-      bot.reply(message,"User '" + name + "' does not exist!");
+      bot.reply(message, "User '" + name + "' does not exist!");
       return;
-    } else {
-      user.regs = [ ];
     }
-    controller.storage.users.save(user,function(err,id) {
-      bot.reply(message,"Clearing all interrupts for " + name);
+    else {
+      user.regs = [];
+    }
+    controller.storage.users.save(user, function(err, id) {
+      bot.reply(message, "Clearing all interrupts for " + name);
     })
   })
 });
 
-controller.hears(['(.+\.clearint) (.*)'],'direct_message,direct_mention,mention',function(bot,message) {
+controller.hears(['(.+\.clearint) (.*)'], 'direct_message,direct_mention,mention,ambient', function(bot, message) {
   console.log("heard clearint")
   var matches = message.text.match(/(.+\.clearint) *(.*)/i);
   if (matches == null) {
@@ -227,85 +235,91 @@ controller.hears(['(.+\.clearint) (.*)'],'direct_message,direct_mention,mention'
   var name = matches[1].substring(0, matches[1].length - ".clearint".length);
   var text = matches[2];
   console.log("clearing int for " + name + ", " + text);
-  controller.storage.users.get(name,function(err,user) {
+  controller.storage.users.get(name, function(err, user) {
     if (!user) {
-      bot.reply(message,"User '" + name + "' does not exist!");
+      bot.reply(message, "User '" + name + "' does not exist!");
       return;
-    } else if (user.regs) {
+    }
+    else if (user.regs) {
       var regs = user.regs;
       console.log(regs);
-      for (i in regs)
-      {
+      for (i in regs) {
         if (regs[i].description === text) {
           regs.splice(i, 1);
           // user.regs = regs.join();
           console.log("i: " + i)
           console.log("user.regs: " + user.regs)
-          controller.storage.users.save(user,function(err,id) {
-            bot.reply(message,"Clearing interrupt '" + text + "' for " + name);
+          controller.storage.users.save(user, function(err, id) {
+            bot.reply(message, "Clearing interrupt '" + text + "' for " + name);
           })
           return;
         }
       }
-    } else {
-      bot.reply(message,"interrupt '" + text + "' not found.");
+    }
+    else {
+      bot.reply(message, "interrupt '" + text + "' not found.");
     }
   })
 });
 
-controller.hears(['help'],'direct_message,direct_mention,mention',function(bot,message) {
+controller.hears(['help'], 'direct_message,direct_mention,mention', function(bot, message) {
   console.log("help");
-  bot.reply(message,"`<username>.showint` show all interrupts");
-  bot.reply(message,"`<username>.regint <interrupt description>` register an interrupt");
-  bot.reply(message,"`<username>.clearint <interrupt description>` clear one interrupt");
-  bot.reply(message,"`<username>.clearall` clear all interrupts");
+  var help_text = "`<username>.showint` show all interrupts\n" + 
+    "`<username>.regint <interrupt description>` register an interrupt\n" + 
+    "`<username>.clearint <interrupt description>` clear one interrupt\n" +
+    "`<username>.clearall` clear all interrupts\n" + 
+    "`------------------------------------------------------------------`" + 
+    "`<username>.create <list name>` create a new list\n" +
+    "`<username>.show` display all lists\n" + 
+    "`<username>.show <list name>` display contents of a list\n" + 
+    "`<username>.del_list <list name> ` delete a list\n" + 
+    "`<username>.del_item \"<list name>\" <item>` delete an item from a list\n" + 
+    "`<username>.add \"<list name>\" <item> ` add an item to a list"
 });
 
-controller.hears(['what is my name','who am i'],'direct_message,direct_mention,mention',function(bot,message) {
+controller.hears(['what is my name', 'who am i'], 'direct_message,direct_mention,mention,ambient', function(bot, message) {
 
-  controller.storage.users.get(message.user,function(err,user) {
+  controller.storage.users.get(message.user, function(err, user) {
     if (user && user.name) {
-      bot.reply(message,"Your name is: " + user.name);
-    } else {
-      bot.reply(message,"I don't know yet!");
+      bot.reply(message, "Your name is: " + user.name);
+    }
+    else {
+      bot.reply(message, "I don't know yet!");
     }
   })
 });
 
 
-controller.hears(['shutdown'],'direct_message,direct_mention,mention',function(bot,message) {
+controller.hears(['shutdown'], 'direct_message,direct_mention,mention', function(bot, message) {
 
-  bot.startConversation(message,function(err,convo) {
-    convo.ask("Are you sure you want me to shutdown?",[
-      {
-        pattern: bot.utterances.yes,
-        callback: function(response,convo) {
-          convo.say("Bye!");
-          convo.next();
-          setTimeout(function() {
-            process.exit();
-          },3000);
-        }
-      },
-      {
-        pattern: bot.utterances.no,
-        default:true,
-        callback: function(response,convo) {
-          convo.say("*Phew!*");
-          convo.next();
-        }
+  bot.startConversation(message, function(err, convo) {
+    convo.ask("Are you sure you want me to shutdown?", [{
+      pattern: bot.utterances.yes,
+      callback: function(response, convo) {
+        convo.say("Bye!");
+        convo.next();
+        setTimeout(function() {
+          process.exit();
+        }, 3000);
       }
-    ])
+    }, {
+      pattern: bot.utterances.no,
+      default: true,
+      callback: function(response, convo) {
+        convo.say("*Phew!*");
+        convo.next();
+      }
+    }])
   })
 })
 
 
-controller.hears(['uptime','identify yourself','who are you','what is your name'],'direct_message,direct_mention,mention',function(bot,message) {
+controller.hears(['uptime', 'identify yourself', 'who are you', 'what is your name'], 'direct_message,direct_mention,mention', function(bot, message) {
 
   var hostname = os.hostname();
   var uptime = formatUptime(process.uptime());
 
-  bot.reply(message,':robot_face: I am a bot named <@' + bot.identity.name +'>. I have been running for ' + uptime + ' on ' + hostname + ".");
+  bot.reply(message, ':robot_face: I am a bot named <@' + bot.identity.name + '>. I have been running for ' + uptime + ' on ' + hostname + ".");
 
 })
 
@@ -320,9 +334,167 @@ function formatUptime(uptime) {
     unit = 'hour';
   }
   if (uptime != 1) {
-    unit = unit +'s';
+    unit = unit + 's';
   }
 
   uptime = uptime.toFixed(2) + ' ' + unit;
   return uptime;
 }
+
+//------------------------
+//generic list management
+//------------------------
+controller.hears(['(.+)\.create (.*)'], 'direct_message,direct_mention,mention,ambient', function(bot, message) {
+  console.log("heard create")
+  var matches = message.text.match(/(.+)\.create (.*)/i);
+  if (matches == null) {
+    return;
+  }
+  var name = matches[1]
+  var text = matches[2]
+  console.log("creating list " + text + " for " + name)
+  controller.storage.users.get(name, function(err, user) {
+    if (!user) {
+      bot.reply(message, "User '" + name + "' does not exist!")
+      return;
+    }
+    else if (user.lists) {
+      user.lists.push({
+        list_name: text,
+        timestamp: JSON.stringify(moment()),
+        list_items: []
+      })
+    }
+    else {
+      user.lists = [
+        {
+          list_name: text,
+          timestamp: JSON.stringify(moment()),
+          list_items: []
+        }]
+    }
+    controller.storage.users.save(user, function(err, id) {
+      bot.reply(message, "Created new list '" + text + "'" + " for " + name);
+    })
+  })
+});
+
+controller.hears(['(.+)\.add (.+), (.+)'], 'direct_message,direct_mention,mention,ambient', function(bot, message) {
+  console.log("heard add")
+  var matches = message.text.match(/(.+)\.add (.+), (.+)/i);
+  if (matches == null) {
+    return;
+  }
+  var name = matches[1]
+  var list_name = matches[2]
+  var list_item = matches[3]
+  console.log("adding " + list_item + " in " + list_name + " for " + name);
+  controller.storage.users.get(name, function(err, user) {
+    if (!user) {
+      bot.reply(message, "User '" + name + "' does not exist!")
+      return;
+    }
+    else if (user.lists) {
+      var list_found = false;
+      for (i in user.lists)
+      {
+        if (user.lists[i].list_name === list_name)
+        {
+          if (user.lists[i].list_items) {
+            user.lists[i].list_items.push({
+              item: list_item,
+              timestamp: JSON.stringify(moment())
+            })
+            bot.reply(message, "`" + list_item + "` added for " + list_name)
+            list_found = true;
+          }
+        }
+      }
+      if (!list_found) 
+      {
+        bot.reply(message, "List not found. Created list `" + list_name + "`")
+        
+        user.lists.push({
+          list_name: list_name,
+          timestamp: JSON.stringify(moment()),
+          list_items: [{
+            item: list_item,
+            timestamp: JSON.stringify(moment())
+          }]
+        })
+      }
+    }
+
+    controller.storage.users.save(user, function(err, id) {
+      bot.reply(message, "Added `" + list_item + "`" + " for `" + list_name + "`")
+    })
+  })
+})
+
+controller.hears(['(.+)\.show$'], 'direct_message,direct_mention,mention,ambient', function(bot, message) {
+  console.log("heard show")
+  var matches = message.text.match(/(.+)\.show$/i);
+  if (matches == null) {
+    return;
+  }
+
+  // get the invoker's time zone
+  bot.api.users.info({
+    user: message.user
+  }, function(err, response) {
+    var timezone = response.user.tz;
+    var name = matches[1]
+    console.log("showing lists for " + name);
+    controller.storage.users.get(name, function(err, user) {
+      if (!user) {
+        bot.reply(message, "User '" + name + "' does not exist!");
+        return;
+      }
+      else if (user.lists && user.lists.length > 0) {
+        var str_lists = "Lists: \n";
+        for (i in user.lists) {
+          m = moment(JSON.parse(user.lists[i].timestamp)).tz(timezone)
+          str_lists += "`" + m.format("MM/DD/YYYY h:mm A") + " " + m.zoneName() + "`" + " - " + user.lists[i].list_name + "\n";
+        }
+        bot.reply(message, str_lists);
+      }
+      else {
+        bot.reply(message, "No lists to show");
+      }
+    }); // users.get
+  }); // users.info
+});
+
+controller.hears(['(.+)\.del_list (.*)'], 'direct_message,direct_mention,mention,ambient', function(bot, message) {
+  console.log("heard clearint")
+  var matches = message.text.match(/(.+)\.del_list (.*)/i);
+  if (matches == null) {
+    return;
+  }
+  console.log(matches)
+  var name = matches[1]
+  var text = matches[2]
+  console.log("deleting list for " + name + ", " + text);
+  controller.storage.users.get(name, function(err, user) {
+    if (!user) {
+      bot.reply(message, "User '" + name + "' does not exist!");
+      return;
+    }
+    else if (user.lists) {
+      var lists = user.lists;
+      console.log(lists);
+      for (i in lists) {
+        if (lists[i].list_name === text) {
+          lists.splice(i, 1);
+          controller.storage.users.save(user, function(err, id) {
+            bot.reply(message, "Deleting list '" + text + "' for " + name);
+          })
+          return;
+        }
+      }
+      bot.reply(message, "List '" + text + "' not found.");
+    } else {
+      bot.reply(message, "No lists found");
+    }
+  })
+});
