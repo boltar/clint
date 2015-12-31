@@ -80,6 +80,7 @@ var bot = controller.spawn({
 // create a db of users
 
 bot.api.users.list({}, function(err, response) {
+  var i
   for (i in response.members) {
     name = response.members[i].name;
     console.log("members: " + response.members[i].name);
@@ -188,6 +189,7 @@ controller.hears(['.+\.showint'], 'direct_message,direct_mention,mention,ambient
       }
       else if (user.regs && user.regs.length > 0) {
         var regList = "registered interrupts: \n";
+        var i
         for (i in user.regs) {
           m = moment(JSON.parse(user.regs[i].timestamp)).tz(timezone)
           regList += "`" + m.format("MM/DD/YYYY h:mm A") + " " + m.zoneName() + "`" + " - " + user.regs[i].description + "\n";
@@ -243,6 +245,7 @@ controller.hears(['(.+\.clearint) (.*)'], 'direct_message,direct_mention,mention
     else if (user.regs) {
       var regs = user.regs;
       console.log(regs);
+      var i
       for (i in regs) {
         if (regs[i].description === text) {
           regs.splice(i, 1);
@@ -268,13 +271,15 @@ controller.hears(['help'], 'direct_message,direct_mention,mention', function(bot
     "`<username>.regint <interrupt description>` register an interrupt\n" + 
     "`<username>.clearint <interrupt description>` clear one interrupt\n" +
     "`<username>.clearall` clear all interrupts\n" + 
-    "`------------------------------------------------------------------`" + 
+    "`------------------------------------------------------------------`\n" + 
     "`<username>.create <list name>` create a new list\n" +
-    "`<username>.show` display all lists\n" + 
+    "`<username>.show_lists` display all lists\n" + 
     "`<username>.show <list name>` display contents of a list\n" + 
     "`<username>.del_list <list name> ` delete a list\n" + 
     "`<username>.del_item \"<list name>\" <item>` delete an item from a list\n" + 
     "`<username>.add \"<list name>\" <item> ` add an item to a list"
+    
+    bot.reply(message, help_text)
 });
 
 controller.hears(['what is my name', 'who am i'], 'direct_message,direct_mention,mention,ambient', function(bot, message) {
@@ -379,9 +384,9 @@ controller.hears(['(.+)\.create (.*)'], 'direct_message,direct_mention,mention,a
   })
 });
 
-controller.hears(['(.+)\.add (.+), (.+)'], 'direct_message,direct_mention,mention,ambient', function(bot, message) {
+controller.hears(['(.+)\.add "(.+)" (.+)'], 'direct_message,direct_mention,mention,ambient', function(bot, message) {
   console.log("heard add")
-  var matches = message.text.match(/(.+)\.add (.+), (.+)/i);
+  var matches = message.text.match(/(.+)\.add "(.+)" (.+)/i);
   if (matches == null) {
     return;
   }
@@ -395,23 +400,19 @@ controller.hears(['(.+)\.add (.+), (.+)'], 'direct_message,direct_mention,mentio
       return;
     }
     else if (user.lists) {
-      var list_found = false;
-      for (i in user.lists)
+      var i = get_list_index(user.lists, list_name)
+
+      if (i != -1)
       {
-        if (user.lists[i].list_name === list_name)
-        {
-          if (user.lists[i].list_items) {
-            user.lists[i].list_items.push({
-              item: list_item,
-              timestamp: JSON.stringify(moment())
-            })
-            bot.reply(message, "`" + list_item + "` added for " + list_name)
-            list_found = true;
-          }
+        if (user.lists[i].list_items) {
+          user.lists[i].list_items.push({
+            item: list_item,
+            timestamp: JSON.stringify(moment())
+          })
+          bot.reply(message, "`" + list_item + "` added for " + list_name)
+          list_found = true;
         }
-      }
-      if (!list_found) 
-      {
+      } else {
         bot.reply(message, "List not found. Created list `" + list_name + "`")
         
         user.lists.push({
@@ -431,9 +432,72 @@ controller.hears(['(.+)\.add (.+), (.+)'], 'direct_message,direct_mention,mentio
   })
 })
 
-controller.hears(['(.+)\.show$'], 'direct_message,direct_mention,mention,ambient', function(bot, message) {
-  console.log("heard show")
-  var matches = message.text.match(/(.+)\.show$/i);
+controller.hears(['(.+)\.del_item "(.+)" (.+)'], 'direct_message,direct_mention,mention,ambient', function(bot, message) {
+  console.log("heard add")
+  var matches = message.text.match(/(.+)\.del_item "(.+)" (.+)/i);
+  if (matches == null) {
+    return;
+  }
+  var name = matches[1]
+  var list_name = matches[2]
+  var list_item = matches[3]
+  console.log("attempting to delete " + list_item + " in " + list_name + " for " + name);
+  controller.storage.users.get(name, function(err, user) {
+    if (!user) {
+      bot.reply(message, "User '" + name + "' does not exist!")
+      return;
+    }
+    else if (user.lists) {
+      var i = get_list_index(user.lists, list_name)
+
+      if (i != -1)
+      {
+        var j = get_item_index(user.lists[i], list_item)
+        if (j != -1) {
+          user.lists[i].list_items.splice(j, 1)
+          controller.storage.users.save(user, function(err, id) {
+            bot.reply(message, "`" + list_item + "` deleted from " + list_name)
+          })
+        } else {
+          bot.reply(message, "`" + list_item + "` does not exist in list `" + list_name + "`") 
+        }
+      } else {
+        bot.reply(message, "List `" + list_name + "` does not exist")
+      }
+    }
+
+  })
+})
+
+function get_list_index(lists, list_name)
+{
+  var i
+  for (i in lists)
+  {
+    if (lists[i].list_name === list_name)
+    {
+      return i
+    }
+  }
+  return -1
+}
+
+function get_item_index(list, item_name)
+{
+  var i
+  for (i in list.list_items)
+  {
+    if (list.list_items[i].item === item_name)
+    {
+      return i
+    }
+  }
+  return -1
+}
+
+controller.hears(['(.+)\.show_lists$'], 'direct_message,direct_mention,mention,ambient', function(bot, message) {
+  console.log("heard show_lists")
+  var matches = message.text.match(/(.+)\.show_lists$/i);
   if (matches == null) {
     return;
   }
@@ -452,6 +516,7 @@ controller.hears(['(.+)\.show$'], 'direct_message,direct_mention,mention,ambient
       }
       else if (user.lists && user.lists.length > 0) {
         var str_lists = "Lists: \n";
+        var i
         for (i in user.lists) {
           m = moment(JSON.parse(user.lists[i].timestamp)).tz(timezone)
           str_lists += "`" + m.format("MM/DD/YYYY h:mm A") + " " + m.zoneName() + "`" + " - " + user.lists[i].list_name + "\n";
@@ -465,16 +530,56 @@ controller.hears(['(.+)\.show$'], 'direct_message,direct_mention,mention,ambient
   }); // users.info
 });
 
+controller.hears(['(.+)\.show (.+)'], 'direct_message,direct_mention,mention,ambient', function(bot, message) {
+  console.log("heard show list")
+  var matches = message.text.match(/(.+)\.show (.+)/i);
+  if (matches == null) {
+    return;
+  }
+  
+  var name = matches[1]
+  var list_name = matches[2]
+  // get the invoker's time zone
+  bot.api.users.info({
+    user: message.user
+  }, function(err, response) {
+    var timezone = response.user.tz;
+    var name = matches[1]
+    controller.storage.users.get(name, function(err, user) {
+      if (!user) {
+        bot.reply(message, "User '" + name + "' does not exist!");
+        return;
+      }
+      else if (user.lists && user.lists.length > 0) {
+        var str_lists = ""
+        var i = get_list_index(user.lists, list_name)
+        var j
+        if (i != -1) {
+          str_lists += list_name + "\n"
+          for (j in user.lists[i].list_items) {
+            m = moment(JSON.parse(user.lists[i].list_items[j].timestamp)).tz(timezone)
+            str_lists += "`" + m.format("MM/DD/YYYY h:mm A") + " " + m.zoneName() + "`" + " - " + user.lists[i].list_items[j].item + "\n";
+          }
+          bot.reply(message, str_lists)
+        }
+      }
+      else {
+        bot.reply(message, "No lists to show");
+      }
+    }); // users.get
+  }); // users.info
+});
+
 controller.hears(['(.+)\.del_list (.*)'], 'direct_message,direct_mention,mention,ambient', function(bot, message) {
-  console.log("heard clearint")
+  console.log("heard del_list")
   var matches = message.text.match(/(.+)\.del_list (.*)/i);
   if (matches == null) {
     return;
   }
   console.log(matches)
   var name = matches[1]
-  var text = matches[2]
-  console.log("deleting list for " + name + ", " + text);
+  var list_name = matches[2]
+  console.log("deleting list for " + name + ", " + list_name);
   controller.storage.users.get(name, function(err, user) {
     if (!user) {
       bot.reply(message, "User '" + name + "' does not exist!");
@@ -483,16 +588,15 @@ controller.hears(['(.+)\.del_list (.*)'], 'direct_message,direct_mention,mention
     else if (user.lists) {
       var lists = user.lists;
       console.log(lists);
-      for (i in lists) {
-        if (lists[i].list_name === text) {
-          lists.splice(i, 1);
+      var i = get_list_index(lists, list_name)
+      if (i != -1) {
+          lists.splice(i, 1)
           controller.storage.users.save(user, function(err, id) {
-            bot.reply(message, "Deleting list '" + text + "' for " + name);
+            bot.reply(message, "Deleting list '" + list_name + "' for " + name);
           })
-          return;
-        }
+      } else {
+        bot.reply(message, "List '" + list_name + "' not found.");
       }
-      bot.reply(message, "List '" + text + "' not found.");
     } else {
       bot.reply(message, "No lists found");
     }
