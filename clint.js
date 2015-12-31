@@ -141,8 +141,8 @@ controller.hears(['call me (.*)'], 'direct_message,direct_mention,mention', func
   })
 });
 
-// [\w]+ doesn't work for some reason... 
-controller.hears(['(.+\.regint) (.*)'], 'direct_message,direct_mention,mention,ambient', function(bot, message) {
+
+controller.hears(['(\\w+\.regint) (.*)'], 'direct_message,direct_mention,mention,ambient', function(bot, message) {
   console.log("heard regint")
   var matches = message.text.match(/(.+\.regint) (.*)/i);
   if (matches == null) {
@@ -276,8 +276,8 @@ controller.hears(['help'], 'direct_message,direct_mention,mention', function(bot
     "`<username>.show_lists` display all lists\n" + 
     "`<username>.show <list name>` display contents of a list\n" + 
     "`<username>.del_list <list name> ` delete a list\n" + 
-    "`<username>.del_item \"<list name>\" <item>` delete an item from a list\n" + 
-    "`<username>.add \"<list name>\" <item> ` add an item to a list"
+    "`<username>.del_item <list name> <item>` delete an item from a list\n" + 
+    "`<username>.add <list name> <item> ` add an item to a list"
     
     bot.reply(message, help_text)
 });
@@ -349,9 +349,9 @@ function formatUptime(uptime) {
 //------------------------
 //generic list management
 //------------------------
-controller.hears(['(.+)\.create (.*)'], 'direct_message,direct_mention,mention,ambient', function(bot, message) {
+controller.hears(['(\\w+)\.create (\\w+)'], 'direct_message,direct_mention,mention,ambient', function(bot, message) {
   console.log("heard create")
-  var matches = message.text.match(/(.+)\.create (.*)/i);
+  var matches = message.text.match(/(.+)\.create (\w+)/i);
   if (matches == null) {
     return;
   }
@@ -379,14 +379,14 @@ controller.hears(['(.+)\.create (.*)'], 'direct_message,direct_mention,mention,a
         }]
     }
     controller.storage.users.save(user, function(err, id) {
-      bot.reply(message, "Created new list '" + text + "'" + " for " + name);
+      bot.reply(message, "Created new list " + text + "" + " for " + name);
     })
   })
 });
 
-controller.hears(['(.+)\.add "(.+)" (.+)'], 'direct_message,direct_mention,mention,ambient', function(bot, message) {
+controller.hears(['(\\w+)\.add (\\w+) (.+)'], 'direct_message,direct_mention,mention,ambient', function(bot, message) {
   console.log("heard add")
-  var matches = message.text.match(/(.+)\.add "(.+)" (.+)/i);
+  var matches = message.text.match(/(.+)\.add (\w+) (.+)/i);
   if (matches == null) {
     return;
   }
@@ -426,14 +426,14 @@ controller.hears(['(.+)\.add "(.+)" (.+)'], 'direct_message,direct_mention,menti
     }
 
     controller.storage.users.save(user, function(err, id) {
-      bot.reply(message, "Added `" + list_item + "`" + " for `" + list_name + "`")
+      bot.reply(message, "Added `" + list_item + "`" + " for " + list_name)
     })
   })
 })
 
-controller.hears(['(.+)\.del_item "(.+)" (.+)'], 'direct_message,direct_mention,mention,ambient', function(bot, message) {
+controller.hears(['(\\w+)\.del_item (\\w+) (.+)'], 'direct_message,direct_mention,mention,ambient', function(bot, message) {
   console.log("heard add")
-  var matches = message.text.match(/(.+)\.del_item "(.+)" (.+)/i);
+  var matches = message.text.match(/(.+)\.del_item (\w+) (.+)/i);
   if (matches == null) {
     return;
   }
@@ -458,10 +458,10 @@ controller.hears(['(.+)\.del_item "(.+)" (.+)'], 'direct_message,direct_mention,
             bot.reply(message, "`" + list_item + "` deleted from " + list_name)
           })
         } else {
-          bot.reply(message, "`" + list_item + "` does not exist in list `" + list_name + "`") 
+          bot.reply(message, "`" + list_item + "` does not exist in list " + list_name ) 
         }
       } else {
-        bot.reply(message, "List `" + list_name + "` does not exist")
+        bot.reply(message, "List " + list_name + " does not exist")
       }
     }
 
@@ -494,7 +494,7 @@ function get_item_index(list, item_name)
   return -1
 }
 
-controller.hears(['(.+)\.show_lists$'], 'direct_message,direct_mention,mention,ambient', function(bot, message) {
+controller.hears(['(\\w+)\.show_lists$'], 'direct_message,direct_mention,mention,ambient', function(bot, message) {
   console.log("heard show_lists")
   var matches = message.text.match(/(.+)\.show_lists$/i);
   if (matches == null) {
@@ -529,9 +529,9 @@ controller.hears(['(.+)\.show_lists$'], 'direct_message,direct_mention,mention,a
   }); // users.info
 });
 
-controller.hears(['(.+)\.show (.+)'], 'direct_message,direct_mention,mention,ambient', function(bot, message) {
+controller.hears(['(\\w+)\.show (\\w+)'], 'direct_message,direct_mention,mention,ambient', function(bot, message) {
   console.log("heard show list")
-  var matches = message.text.match(/(.+)\.show (.+)/i);
+  var matches = message.text.match(/(.+)\.show (\w+)/i);
   if (matches == null) {
     return;
   }
@@ -569,9 +569,9 @@ controller.hears(['(.+)\.show (.+)'], 'direct_message,direct_mention,mention,amb
   }); // users.info
 });
 
-controller.hears(['(.+)\.del_list (.*)'], 'direct_message,direct_mention,mention,ambient', function(bot, message) {
+controller.hears(['(\\w+)\.del_list (\\w+)'], 'direct_message,direct_mention,mention,ambient', function(bot, message) {
   console.log("heard del_list")
-  var matches = message.text.match(/(.+)\.del_list (.*)/i);
+  var matches = message.text.match(/(.+)\.del_list (\w+)/i);
   if (matches == null) {
     return;
   }
@@ -591,13 +591,14 @@ controller.hears(['(.+)\.del_list (.*)'], 'direct_message,direct_mention,mention
       if (i != -1) {
           lists.splice(i, 1)
           controller.storage.users.save(user, function(err, id) {
-            bot.reply(message, "Deleting list '" + list_name + "' for " + name);
+            bot.reply(message, "Deleting list " + list_name + " for " + name);
           })
       } else {
-        bot.reply(message, "List '" + list_name + "' not found.");
+        bot.reply(message, "List " + list_name + " not found.");
       }
     } else {
       bot.reply(message, "No lists found");
     }
   })
 });
+
