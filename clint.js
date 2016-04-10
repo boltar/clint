@@ -142,14 +142,14 @@ controller.hears(['call me (.*)'], 'direct_message,direct_mention,mention', func
 });
 
 
-controller.hears(['(\\w+\.regint) (.*)'], 'direct_message,direct_mention,mention,ambient', function(bot, message) {
+controller.hears(['(\\w+)\.(regint|intreg|reg_int|int_reg) ([\\w:]+)'], 'direct_message,direct_mention,mention,ambient', function(bot, message) {
   console.log("heard regint")
-  var matches = message.text.match(/(.+\.regint) (.*)/i);
+  var matches = message.text.match(/(.+)\.(regint|intreg|reg_int|int_reg) ([\w:]+)/i);
   if (matches == null) {
     return;
   }
-  var name = matches[1].substring(0, matches[1].length - ".regint".length);
-  var text = matches[2];
+  var name = matches[1]
+  var text = matches[3]
   console.log("registering for " + name + " " + text);
   controller.storage.users.get(name, function(err, user) {
     if (!user) {
@@ -168,9 +168,9 @@ controller.hears(['(\\w+\.regint) (.*)'], 'direct_message,direct_mention,mention
   })
 });
 
-controller.hears(['.+\.showint'], 'direct_message,direct_mention,mention,ambient', function(bot, message) {
+controller.hears(['(\\w+)\.(showint|intshow)'], 'direct_message,direct_mention,mention,ambient', function(bot, message) {
   console.log("heard showint")
-  var matches = message.text.match(/.+\.showint/i);
+  var matches = message.text.match(/(.+)\.(showint|intshow) ([\w:]+)/i);
   if (matches == null) {
     return;
   }
@@ -227,15 +227,14 @@ controller.hears(['.+\.clearall'], 'direct_message,direct_mention,mention,ambien
   })
 });
 
-controller.hears(['(.+\.clearint) (.*)'], 'direct_message,direct_mention,mention,ambient', function(bot, message) {
+controller.hears(['(\\w+)\.(clearint|intclear) ([\\w:]+)'], 'direct_message,direct_mention,mention,ambient', function(bot, message) {
   console.log("heard clearint")
-  var matches = message.text.match(/(.+\.clearint) *(.*)/i);
+  var matches = message.text.match(/(.+)\.(clearint|intclear) ([\w:]+)/i);
   if (matches == null) {
     return;
   }
-  console.log(matches)
-  var name = matches[1].substring(0, matches[1].length - ".clearint".length);
-  var text = matches[2];
+  var name = matches[1]
+  var text = matches[3]
   console.log("clearing int for " + name + ", " + text);
   controller.storage.users.get(name, function(err, user) {
     if (!user) {
@@ -267,16 +266,16 @@ controller.hears(['(.+\.clearint) (.*)'], 'direct_message,direct_mention,mention
 
 controller.hears(['help'], 'direct_message,direct_mention,mention', function(bot, message) {
   console.log("help");
-  var help_text = "`<username>.showint` show all interrupts\n" + 
-    "`<username>.regint <interrupt description>` register an interrupt\n" + 
-    "`<username>.clearint <interrupt description>` clear one interrupt\n" +
+  var help_text = "`<username>.showint` show all interrupts (intshow)\n" + 
+    "`<username>.regint <interrupt description>` register an interrupt (reg_int, intreg, int_reg)\n" + 
+    "`<username>.clearint <interrupt description>` clear one interrupt (clear_int, intclear, int_clear)\n" +
     "`<username>.clearall` clear all interrupts\n" + 
     "`------------------------------------------------------------------`\n" + 
     "`<username>.create <list name>` create a new list\n" +
     "`<username>.show_lists` display all lists\n" + 
     "`<username>.show <list name>` display contents of a list\n" + 
     "`<username>.del_list <list name> ` delete a list\n" + 
-    "`<username>.del_item <list name> <item>` delete an item from a list\n" + 
+    "`<username>.del_item <list name> <item>` delete an item from a list (del, remove_item, remove)\n" + 
     "`<username>.add <list name> <item> ` add an item to a list"
     
     bot.reply(message, help_text)
@@ -384,15 +383,15 @@ controller.hears(['(\\w+)\.create ([\\w:]+)'], 'direct_message,direct_mention,me
   })
 });
 
-controller.hears(['(\\w+)\.add ([\\w:]+) (.+)'], 'direct_message,direct_mention,mention,ambient', function(bot, message) {
+controller.hears(['(\\w+)\.(add|add_item) ([\\w:]+) (.+)'], 'direct_message,direct_mention,mention,ambient', function(bot, message) {
   console.log("heard add")
-  var matches = message.text.match(/(.+)\.add ([\w:]+) (.+)/i);
+  var matches = message.text.match(/(.+)\.(add|add_item) ([\w:]+) (.+)/i);
   if (matches == null) {
     return;
   }
   var name = matches[1]
-  var list_name = matches[2]
-  var list_item = matches[3]
+  var list_name = matches[3]
+  var list_item = matches[4]
   console.log("adding " + list_item + " in " + list_name + " for " + name);
   controller.storage.users.get(name, function(err, user) {
     if (!user) {
@@ -431,15 +430,15 @@ controller.hears(['(\\w+)\.add ([\\w:]+) (.+)'], 'direct_message,direct_mention,
   })
 })
 
-controller.hears(['(\\w+)\.del_item ([\\w:]+) (.+)'], 'direct_message,direct_mention,mention,ambient', function(bot, message) {
-  console.log("heard add")
-  var matches = message.text.match(/(.+)\.del_item ([\w:]+) (.+)/i);
+controller.hears(['(\\w+)\.(del|del_item|remove|remove_item) ([\\w:]+) (.+)'], 'direct_message,direct_mention,mention,ambient', function(bot, message) {
+  console.log("heard del_item")
+  var matches = message.text.match(/(.+)\.(del|del_item|remove|remove_item) ([\w:]+) (.+)/i);
   if (matches == null) {
     return;
   }
   var name = matches[1]
-  var list_name = matches[2]
-  var list_item = matches[3]
+  var list_name = matches[3]
+  var list_item = matches[4]
   console.log("attempting to delete " + list_item + " in " + list_name + " for " + name);
   controller.storage.users.get(name, function(err, user) {
     if (!user) {
