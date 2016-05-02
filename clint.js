@@ -131,11 +131,10 @@ controller.hears(['(\\w+)\.(regint|intreg|reg_int|int_reg) ([\\w:]+)'], 'direct_
 
 controller.hears(['(\\w+)\.(showint|intshow)'], 'direct_message,direct_mention,mention,ambient', function(bot, message) {
   console.log("heard showint")
-  var matches = message.text.match(/(.+)\.(showint|intshow) ([\w:]+)/i);
+  var matches = message.text.match(/(.+)\.(showint|intshow)/i);
   if (matches == null) {
     return;
   }
-
   // get the invoker's time zone
   bot.api.users.info({
     user: message.user
