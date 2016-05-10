@@ -515,6 +515,47 @@ controller.hears(['(\\w+)\.del_list ([\\w:]+)'], 'direct_message,direct_mention,
   })
 });
 
+// --- STOCK MANAGEMENT, TO WORK WITH CHARLES
+controller.hears(['(\\w+)\.quote ([\\w:]+)'], 'direct_message,direct_mention,mention,ambient', function(bot, message) {
+  console.log("heard quote")
+  var matches = message.text.match(/(.+)\.quote ([\w:]+)/i);
+  if (matches == null) {
+    return;
+  }
+  
+  var name = matches[1]
+  var watch_list_name = matches[2]
+  // get the invoker's time zone
+  bot.api.users.info({
+    user: message.user
+  }, function(err, response) {
+    var timezone = response.user.tz;
+    var name = matches[1]
+    controller.storage.users.get(name, function(err, user) {
+      if (!user) {
+        bot.reply(message, "User '" + name + "' does not exist!");
+        return;
+      }
+      else if (user.lists && user.lists.length > 0) {
+        var str_lists = ""
+        var i = get_list_index(user.lists, watch_list_name)
+        var j
+        if (i != -1) {
+          str_lists += watch_list_name + "\n" + "!q"
+          for (j in user.lists[i].list_items) {
+            m = moment(JSON.parse(user.lists[i].list_items[j].timestamp)).tz(timezone)
+            str_lists += " " + user.lists[i].list_items[j].item;
+          }
+          bot.reply(message, str_lists)
+        }
+      }
+      else {
+        bot.reply(message, "No watchlist named " + watch_list_name);
+      }
+    }); // users.get
+  }); // users.info
+});
+
 controller.hears(['hello', 'hi'], 'direct_message,direct_mention,mention', function(bot, message) {
 
   bot.api.reactions.add({
