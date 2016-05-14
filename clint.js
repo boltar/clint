@@ -103,9 +103,9 @@ bot.api.users.list({}, function(err, response) {
 })
 
 
-controller.hears(['(\\w+)\.(regint|intreg|reg_int|int_reg) ([\\w:]+)'], 'direct_message,direct_mention,mention,ambient', function(bot, message) {
+controller.hears(['(\\w+)\.(regint|intreg|reg_int|int_reg) ([\\w: ]+)'], 'direct_message,direct_mention,mention,ambient', function(bot, message) {
   console.log("heard regint")
-  var matches = message.text.match(/(.+)\.(regint|intreg|reg_int|int_reg) ([\w:]+)/i);
+  var matches = message.text.match(/(.+)\.(regint|intreg|reg_int|int_reg) ([\w: ]+)/i);
   if (matches == null) {
     return;
   }
