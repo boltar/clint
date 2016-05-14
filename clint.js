@@ -476,9 +476,9 @@ controller.hears(['(\\w+)\.show_lists$'], 'direct_message,direct_mention,mention
   }); // users.info
 });
 
-controller.hears(['(\\w+)\.show ([\\w]+)'], 'direct_message,direct_mention,mention,ambient', function(bot, message) {
+controller.hears(['(\\w+)\.show (.+)'], 'direct_message,direct_mention,mention,ambient', function(bot, message) {
   console.log("heard show list")
-  var matches = message.text.match(/(.+)\.show ([\w]+)/i);
+  var matches = message.text.match(/(.+)\.show (.+)/i);
   if (matches == null) {
     return;
   }
