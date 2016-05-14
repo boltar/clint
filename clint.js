@@ -260,9 +260,9 @@ function formatUptime(uptime) {
 //------------------------
 //generic list management
 //------------------------
-controller.hears(['(\\w+)\.create ([\\w]+)'], 'direct_message,direct_mention,mention,ambient', function(bot, message) {
+controller.hears(['(\\w+)\.create ([\\w:]+)'], 'direct_message,direct_mention,mention,ambient', function(bot, message) {
   console.log("heard create")
-  var matches = message.text.match(/(.+)\.create ([\w]+)/i);
+  var matches = message.text.match(/(.+)\.create ([\w:]+)/i);
   if (matches == null) {
     return;
   }
@@ -295,9 +295,9 @@ controller.hears(['(\\w+)\.create ([\\w]+)'], 'direct_message,direct_mention,men
   })
 });
 
-controller.hears(['(\\w+)\.(add|add_item) ([\\w]+) (.+)'], 'direct_message,direct_mention,mention,ambient', function(bot, message) {
+controller.hears(['(\\w+)\.(add|add_item) ([\\w:]+) (.+)'], 'direct_message,direct_mention,mention,ambient', function(bot, message) {
   console.log("heard add")
-  var matches = message.text.match(/(.+)\.(add|add_item) ([\w]+) (.+)/i);
+  var matches = message.text.match(/(.+)\.(add|add_item) ([\w:]+) (.+)/i);
   if (matches == null) {
     return;
   }
@@ -342,46 +342,9 @@ controller.hears(['(\\w+)\.(add|add_item) ([\\w]+) (.+)'], 'direct_message,direc
   })
 })
 
-controller.hears(['(\\w+)\.(del|del_item|remove|remove_item) ([\\w]+) (.+)'], 'direct_message,direct_mention,mention,ambient', function(bot, message) {
-  console.log("heard del_item")
-  var matches = message.text.match(/(.+)\.(del|del_item|remove|remove_item) ([\w]+) (.+)/i);
-  if (matches == null) {
-    return;
-  }
-  var name = matches[1]
-  var list_name = matches[3]
-  var list_item = matches[4]
-  console.log("attempting to delete " + list_item + " in " + list_name + " for " + name);
-  controller.storage.users.get(name, function(err, user) {
-    if (!user) {
-      bot.reply(message, "User '" + name + "' does not exist!")
-      return;
-    }
-    else if (user.lists) {
-      var i = get_list_index(user.lists, list_name)
-
-      if (i != -1)
-      {
-        var j = get_item_index(user.lists[i], list_item)
-        if (j != -1) {
-          user.lists[i].list_items.splice(j, 1)
-          controller.storage.users.save(user, function(err, id) {
-            bot.reply(message, "`" + list_item + "` deleted from " + list_name)
-          })
-        } else {
-          bot.reply(message, "`" + list_item + "` out of range " + list_name ) 
-        }
-      } else {
-        bot.reply(message, "List " + list_name + " does not exist")
-      }
-    }
-
-  })
-})
-
-controller.hears(['(\\w+)\.(del|del_item|remove|remove_item) ([\\w]+) ([\\d]+)'], 'direct_message,direct_mention,mention,ambient', function(bot, message) {
+controller.hears(['(\\w+)\.(del|del_item|remove|remove_item) ([\\w:]+) ([\\d]+)'], 'direct_message,direct_mention,mention,ambient', function(bot, message) {
   console.log("heard del2")
-  var matches = message.text.match(/(.+)\.(del|del_item|remove|remove_item) ([\w]+) ([\d]+)/i);
+  var matches = message.text.match(/(.+)\.(del|del_item|remove|remove_item) ([\w:]+) ([\d]+)/i);
   if (matches == null) {
     return;
   }
@@ -405,7 +368,7 @@ controller.hears(['(\\w+)\.(del|del_item|remove|remove_item) ([\\w]+) ([\\d]+)']
             bot.reply(message, "`" + list_item + "` deleted from " + list_name)
           })
         } else {
-          bot.reply(message, "`" + list_item + "` does not exist in list " + list_name ) 
+          bot.reply(message, "`" + list_item + "` out of range in " + list_name ) 
         }
       } else {
         bot.reply(message, "List " + list_name + " does not exist")
@@ -518,9 +481,9 @@ controller.hears(['(\\w+)\.show (.+)'], 'direct_message,direct_mention,mention,a
   }); // users.info
 });
 
-controller.hears(['(\\w+)\.del_list ([\\w]+)'], 'direct_message,direct_mention,mention,ambient', function(bot, message) {
+controller.hears(['(\\w+)\.del_list ([\\w:]+)'], 'direct_message,direct_mention,mention,ambient', function(bot, message) {
   console.log("heard del_list")
-  var matches = message.text.match(/(.+)\.del_list ([\w]+)/i);
+  var matches = message.text.match(/(.+)\.del_list ([\w:]+)/i);
   if (matches == null) {
     return;
   }
@@ -552,9 +515,9 @@ controller.hears(['(\\w+)\.del_list ([\\w]+)'], 'direct_message,direct_mention,m
 });
 
 // --- STOCK MANAGEMENT, TO WORK WITH CHARLES
-controller.hears(['(\\w+)\.quote ([\\w]+)'], 'direct_message,direct_mention,mention,ambient', function(bot, message) {
+controller.hears(['(\\w+)\.quote ([\\w:]+)'], 'direct_message,direct_mention,mention,ambient', function(bot, message) {
   console.log("heard quote")
-  var matches = message.text.match(/(.+)\.quote ([\w]+)/i);
+  var matches = message.text.match(/(.+)\.quote ([\w:]+)/i);
   if (matches == null) {
     return;
   }
@@ -592,9 +555,9 @@ controller.hears(['(\\w+)\.quote ([\\w]+)'], 'direct_message,direct_mention,ment
   }); // users.info
 });
 
-controller.hears(['(\\w+)\.stats ([\\w]+)'], 'direct_message,direct_mention,mention,ambient', function(bot, message) {
+controller.hears(['(\\w+)\.stats ([\\w:]+)'], 'direct_message,direct_mention,mention,ambient', function(bot, message) {
   console.log("heard stats")
-  var matches = message.text.match(/(.+)\.stats ([\w]+)/i);
+  var matches = message.text.match(/(.+)\.stats ([\w:]+)/i);
   if (matches == null) {
     return;
   }
