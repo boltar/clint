@@ -103,9 +103,9 @@ bot.api.users.list({}, function(err, response) {
 })
 
 
-controller.hears(['(\\w+)\.(regint|intreg|reg_int|int_reg) ([\\w: ]+)'], 'direct_message,direct_mention,mention,ambient', function(bot, message) {
+controller.hears(['(\\w+)\.(regint|intreg|reg_int|int_reg) ([\\w ]+)'], 'direct_message,direct_mention,mention,ambient', function(bot, message) {
   console.log("heard regint")
-  var matches = message.text.match(/(.+)\.(regint|intreg|reg_int|int_reg) ([\w: ]+)/i);
+  var matches = message.text.match(/(.+)\.(regint|intreg|reg_int|int_reg) ([\w ]+)/i);
   if (matches == null) {
     return;
   }
@@ -150,10 +150,12 @@ controller.hears(['(\\w+)\.(showint|intshow)'], 'direct_message,direct_mention,m
       else if (user.regs && user.regs.length > 0) {
         var regList = "registered interrupts: \n";
         var i
+        list_index = 0
         for (i in user.regs) {
           m = moment(JSON.parse(user.regs[i].timestamp)).tz(timezone)
-          regList += "`" + m.format("MM/DD/YYYY h:mm A") + " " + m.zoneName() + "`" + " - " + user.regs[i].description + "\n";
-          //regList += m + " - " + user.regs[i].description + "\n";
+          
+          regList += "`[" + list_index + "] " + m.format("MM/DD/YYYY h:mm A") + " " + m.zoneName() + "`" + " - " + user.regs[i].description + "\n";
+          list_index++
         }
         bot.reply(message, regList);
       }
@@ -187,15 +189,15 @@ controller.hears(['.+\.clearall'], 'direct_message,direct_mention,mention,ambien
   })
 });
 
-controller.hears(['(\\w+)\.(clearint|intclear) ([\\w:]+)'], 'direct_message,direct_mention,mention,ambient', function(bot, message) {
+controller.hears(['(\\w+)\.(clearint|intclear) ([\\d]+)'], 'direct_message,direct_mention,mention,ambient', function(bot, message) {
   console.log("heard clearint")
-  var matches = message.text.match(/(.+)\.(clearint|intclear) ([\w:]+)/i);
+  var matches = message.text.match(/(.+)\.(clearint|intclear) ([\d]+)/i);
   if (matches == null) {
     return;
   }
   var name = matches[1]
-  var text = matches[3]
-  console.log("clearing int for " + name + ", " + text);
+  var int_index = matches[3]
+  console.log("clearing int for " + name + ", " + int_index);
   controller.storage.users.get(name, function(err, user) {
     if (!user) {
       bot.reply(message, "User '" + name + "' does not exist!");
@@ -204,22 +206,18 @@ controller.hears(['(\\w+)\.(clearint|intclear) ([\\w:]+)'], 'direct_message,dire
     else if (user.regs) {
       var regs = user.regs;
       console.log(regs);
-      var i
-      for (i in regs) {
-        if (regs[i].description === text) {
-          regs.splice(i, 1);
-          // user.regs = regs.join();
-          console.log("i: " + i)
+
+      if (int_index >=0 && int_index < regs.length) {
+          regs.splice(int_index, 1);
           console.log("user.regs: " + user.regs)
           controller.storage.users.save(user, function(err, id) {
-            bot.reply(message, "Clearing interrupt '" + text + "' for " + name);
+            bot.reply(message, "Clearing interrupt '" + int_index + "' for " + name);
           })
           return;
-        }
       }
     }
     else {
-      bot.reply(message, "interrupt '" + text + "' not found.");
+      bot.reply(message, "interrupt '" + int_index + "' out of range.");
     }
   })
 });
@@ -262,9 +260,9 @@ function formatUptime(uptime) {
 //------------------------
 //generic list management
 //------------------------
-controller.hears(['(\\w+)\.create ([\\w:]+)'], 'direct_message,direct_mention,mention,ambient', function(bot, message) {
+controller.hears(['(\\w+)\.create ([\\w]+)'], 'direct_message,direct_mention,mention,ambient', function(bot, message) {
   console.log("heard create")
-  var matches = message.text.match(/(.+)\.create ([\w:]+)/i);
+  var matches = message.text.match(/(.+)\.create ([\w]+)/i);
   if (matches == null) {
     return;
   }
@@ -297,9 +295,9 @@ controller.hears(['(\\w+)\.create ([\\w:]+)'], 'direct_message,direct_mention,me
   })
 });
 
-controller.hears(['(\\w+)\.(add|add_item) ([\\w:]+) (.+)'], 'direct_message,direct_mention,mention,ambient', function(bot, message) {
+controller.hears(['(\\w+)\.(add|add_item) ([\\w]+) (.+)'], 'direct_message,direct_mention,mention,ambient', function(bot, message) {
   console.log("heard add")
-  var matches = message.text.match(/(.+)\.(add|add_item) ([\w:]+) (.+)/i);
+  var matches = message.text.match(/(.+)\.(add|add_item) ([\w]+) (.+)/i);
   if (matches == null) {
     return;
   }
@@ -344,9 +342,9 @@ controller.hears(['(\\w+)\.(add|add_item) ([\\w:]+) (.+)'], 'direct_message,dire
   })
 })
 
-controller.hears(['(\\w+)\.(del|del_item|remove|remove_item) ([\\w:]+) (.+)'], 'direct_message,direct_mention,mention,ambient', function(bot, message) {
+controller.hears(['(\\w+)\.(del|del_item|remove|remove_item) ([\\w]+) (.+)'], 'direct_message,direct_mention,mention,ambient', function(bot, message) {
   console.log("heard del_item")
-  var matches = message.text.match(/(.+)\.(del|del_item|remove|remove_item) ([\w:]+) (.+)/i);
+  var matches = message.text.match(/(.+)\.(del|del_item|remove|remove_item) ([\w]+) (.+)/i);
   if (matches == null) {
     return;
   }
@@ -367,6 +365,42 @@ controller.hears(['(\\w+)\.(del|del_item|remove|remove_item) ([\\w:]+) (.+)'], '
         var j = get_item_index(user.lists[i], list_item)
         if (j != -1) {
           user.lists[i].list_items.splice(j, 1)
+          controller.storage.users.save(user, function(err, id) {
+            bot.reply(message, "`" + list_item + "` deleted from " + list_name)
+          })
+        } else {
+          bot.reply(message, "`" + list_item + "` out of range " + list_name ) 
+        }
+      } else {
+        bot.reply(message, "List " + list_name + " does not exist")
+      }
+    }
+
+  })
+})
+
+controller.hears(['(\\w+)\.(del|del_item|remove|remove_item) ([\\w]+) ([\\d]+)'], 'direct_message,direct_mention,mention,ambient', function(bot, message) {
+  console.log("heard del2")
+  var matches = message.text.match(/(.+)\.(del|del_item|remove|remove_item) ([\w]+) ([\d]+)/i);
+  if (matches == null) {
+    return;
+  }
+  var name = matches[1]
+  var list_name = matches[3]
+  var list_item = parseInt(matches[4], 10)
+  console.log("attempting to delete " + list_item + " in " + list_name + " for " + name);
+  controller.storage.users.get(name, function(err, user) {
+    if (!user) {
+      bot.reply(message, "User '" + name + "' does not exist!")
+      return;
+    }
+    else if (user.lists) {
+      var i = get_list_index(user.lists, list_name)
+
+      if (i != -1)
+      {
+        if ((list_item >= 0) && (list_item < user.lists[i].list_items.length)) {
+          user.lists[i].list_items.splice(list_item, 1)
           controller.storage.users.save(user, function(err, id) {
             bot.reply(message, "`" + list_item + "` deleted from " + list_name)
           })
@@ -442,9 +476,9 @@ controller.hears(['(\\w+)\.show_lists$'], 'direct_message,direct_mention,mention
   }); // users.info
 });
 
-controller.hears(['(\\w+)\.show ([\\w:]+)'], 'direct_message,direct_mention,mention,ambient', function(bot, message) {
+controller.hears(['(\\w+)\.show ([\\w]+)'], 'direct_message,direct_mention,mention,ambient', function(bot, message) {
   console.log("heard show list")
-  var matches = message.text.match(/(.+)\.show ([\w:]+)/i);
+  var matches = message.text.match(/(.+)\.show ([\w]+)/i);
   if (matches == null) {
     return;
   }
@@ -468,9 +502,11 @@ controller.hears(['(\\w+)\.show ([\\w:]+)'], 'direct_message,direct_mention,ment
         var j
         if (i != -1) {
           str_lists += list_name + "\n"
+          list_index = 0
           for (j in user.lists[i].list_items) {
             m = moment(JSON.parse(user.lists[i].list_items[j].timestamp)).tz(timezone)
-            str_lists += "`" + m.format("MM/DD/YYYY h:mm A") + " " + m.zoneName() + "`" + " - " + user.lists[i].list_items[j].item + "\n";
+            str_lists += "`[" + list_index + "] " + m.format("MM/DD/YYYY h:mm A") + " " + m.zoneName() + "`" + " - " + user.lists[i].list_items[j].item + "\n";
+            list_index++
           }
           bot.reply(message, str_lists)
         }
@@ -482,9 +518,9 @@ controller.hears(['(\\w+)\.show ([\\w:]+)'], 'direct_message,direct_mention,ment
   }); // users.info
 });
 
-controller.hears(['(\\w+)\.del_list ([\\w:]+)'], 'direct_message,direct_mention,mention,ambient', function(bot, message) {
+controller.hears(['(\\w+)\.del_list ([\\w]+)'], 'direct_message,direct_mention,mention,ambient', function(bot, message) {
   console.log("heard del_list")
-  var matches = message.text.match(/(.+)\.del_list ([\w:]+)/i);
+  var matches = message.text.match(/(.+)\.del_list ([\w]+)/i);
   if (matches == null) {
     return;
   }
@@ -516,9 +552,9 @@ controller.hears(['(\\w+)\.del_list ([\\w:]+)'], 'direct_message,direct_mention,
 });
 
 // --- STOCK MANAGEMENT, TO WORK WITH CHARLES
-controller.hears(['(\\w+)\.quote ([\\w:]+)'], 'direct_message,direct_mention,mention,ambient', function(bot, message) {
+controller.hears(['(\\w+)\.quote ([\\w]+)'], 'direct_message,direct_mention,mention,ambient', function(bot, message) {
   console.log("heard quote")
-  var matches = message.text.match(/(.+)\.quote ([\w:]+)/i);
+  var matches = message.text.match(/(.+)\.quote ([\w]+)/i);
   if (matches == null) {
     return;
   }
@@ -556,9 +592,9 @@ controller.hears(['(\\w+)\.quote ([\\w:]+)'], 'direct_message,direct_mention,men
   }); // users.info
 });
 
-controller.hears(['(\\w+)\.stats ([\\w:]+)'], 'direct_message,direct_mention,mention,ambient', function(bot, message) {
+controller.hears(['(\\w+)\.stats ([\\w]+)'], 'direct_message,direct_mention,mention,ambient', function(bot, message) {
   console.log("heard stats")
-  var matches = message.text.match(/(.+)\.stats ([\w:]+)/i);
+  var matches = message.text.match(/(.+)\.stats ([\w]+)/i);
   if (matches == null) {
     return;
   }
